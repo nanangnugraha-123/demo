@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kolektor Bola Edukasi - Berburu Bola di Lapangan</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Inter & Fredoka One untuk nuansa ramah anak -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Fredoka', 'Inter', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            overflow: hidden;
+            background-color: #1a4d2e;
+        }
+
+        /* Animasi Kustom */
+        @keyframes bounce-subtle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        @keyframes pop-in {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .animate-bounce-subtle {
+            animation: bounce-subtle 1.5s infinite ease-in-out;
+        }
+
+        .animate-pop {
+            animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* Stylized Buttons */
+        .btn-3d {
+            transition: all 0.1s ease;
+            box-shadow: 0px 6px 0px rgba(0, 0, 0, 0.25);
+        }
+        .btn-3d:active {
+            transform: translateY(4px);
+            box-shadow: 0px 2px 0px rgba(0, 0, 0, 0.25);
+        }
+
+        .btn-green {
+            background: linear-gradient(180deg, #4ADE80 0%, #16A34A 100%);
+            border: 3px solid #14532D;
+            color: white;
+        }
+
+        .btn-orange {
+            background: linear-gradient(180deg, #FB923C 0%, #EA580C 100%);
+            border: 3px solid #7C2D12;
+            color: white;
+        }
+
+        .btn-blue {
+            background: linear-gradient(180deg, #38BDF8 0%, #0284C7 100%);
+            border: 3px solid #0C4A6E;
+            color: white;
+        }
+
+        /* Canvas Style */
+        #gameCanvas {
+            touch-action: none;
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: #4ade80;
+        }
+
+        /* Utility Modal Glassmorphism */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            border: 4px solid #15803d;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between items-center relative select-none">
+
+    <!-- OVERLAY UTAMA: MENU AWAL -->
+    <div id="startScreen" class="absolute inset-0 z-30 flex flex-col items-center justify-center p-4 bg-emerald-900/80 backdrop-blur-sm animate-pop">
+        <div class="glass-panel w-full max-w-md rounded-3xl p-6 text-center shadow-2xl flex flex-col items-center">
+            
+            <!-- Header Icon & Judul -->
+            <div class="relative mb-2">
+                <span class="text-6xl">⚽</span>
+                <span class="text-4xl absolute -bottom-1 -right-2">🧺</span>
+            </div>
+            <h1 class="text-3xl font-bold text-emerald-800 tracking-wide mb-1">KOLEKTOR BOLA</h1>
+            <p class="text-sm font-semibold text-emerald-600 mb-6">Game Berburu Bola Edukasi (Kelas 3 SD)</p>
+
+            <!-- Mode Selector -->
+            <div class="w-full space-y-3 mb-6">
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider text-left pl-1">Pilih Materi Pembelajaran:</p>
+                
+                <button onclick="selectCategory('math')" id="cat-math" class="w-full btn-3d btn-green py-3 px-4 rounded-2xl flex items-center justify-between text-lg font-bold">
+                    <span class="flex items-center gap-2">🔢 <span>Matematika</span></span>
+                    <span class="text-xs bg-black/20 px-2 py-1 rounded-full font-normal">Genap / Ganjil</span>
+                </button>
+
+                <button onclick="selectCategory('indo')" id="cat-indo" class="w-full btn-3d btn-orange py-3 px-4 rounded-2xl flex items-center justify-between text-lg font-bold">
+                    <span class="flex items-center gap-2">📝 <span>Bahasa Indonesia</span></span>
+                    <span class="text-xs bg-black/20 px-2 py-1 rounded-full font-normal">Benda / Sifat / Kerja</span>
+                </button>
+
+                <button onclick="selectCategory('science')" id="cat-science" class="w-full btn-3d btn-blue py-3 px-4 rounded-2xl flex items-center justify-between text-lg font-bold">
+                    <span class="flex items-center gap-2">🌿 <span>IPA Dasar</span></span>
+                    <span class="text-xs bg-black/20 px-2 py-1 rounded-full font-normal">Hewan & Benda</span>
+                </button>
+            </div>
+
+            <!-- Petunjuk Singkat -->
+            <div class="bg-amber-50 border-2 border-amber-300 rounded-xl p-3 mb-6 text-left w-full text-xs text-amber-900 leading-relaxed">
+                <strong>Cara Bermain:</strong><br>
+                1. Perhatikan <b>Misi Target</b> di bagian atas layar.<br>
+                2. Tangkap bola yang <b>sesuai</b> dengan keranjang.<br>
+                3. Gunakan tombol panah bawah / geser keranjang!
+            </div>
+
+            <button onclick="startGame()" class="w-full btn-3d bg-yellow-400 hover:bg-yellow-300 text-yellow-950 font-extrabold text-xl py-4 rounded-2xl border-4 border-yellow-600 shadow-lg transform active:scale-95 transition">
+                MULAIAIN MAIN 🚀
+            </button>
+        </div>
+    </div>
+
+    <!-- HUD (HEADS-UP DISPLAY) PERMAINAN -->
+    <div id="hud" class="absolute top-0 left-0 right-0 z-20 p-3 pointer-events-none hidden flex-col gap-2 max-w-lg mx-auto">
+        <!-- Bar Status Atas -->
+        <div class="flex justify-between items-center gap-2">
+            <!-- Skor -->
+            <div class="bg-white/90 backdrop-blur border-2 border-emerald-600 rounded-2xl px-3 py-1.5 shadow flex items-center gap-1.5 pointer-events-auto">
+                <span class="text-xl">⭐</span>
+                <span id="scoreText" class="text-lg font-bold text-emerald-800">0</span>
+            </div>
+
+            <!-- Nyawa -->
+            <div id="livesContainer" class="bg-white/90 backdrop-blur border-2 border-emerald-600 rounded-2xl px-3 py-1.5 shadow flex items-center gap-1 pointer-events-auto">
+                <span class="text-lg">❤️</span>
+                <span class="text-lg">❤️</span>
+                <span class="text-lg">❤️</span>
+            </div>
+
+            <!-- Timer -->
+            <div class="bg-white/90 backdrop-blur border-2 border-emerald-600 rounded-2xl px-3 py-1.5 shadow flex items-center gap-1.5 pointer-events-auto">
+                <span class="text-xl">⏱️</span>
+                <span id="timerText" class="text-lg font-bold text-emerald-800">60s</span>
+            </div>
+        </div>
+
+        <!-- Target Misi Banner -->
+        <div class="bg-yellow-400 border-4 border-amber-600 rounded-2xl p-2.5 shadow-lg text-center animate-bounce-subtle pointer-events-auto">
+            <span class="text-xs font-bold text-amber-900 uppercase tracking-wider block">TARGET MISI BOLA:</span>
+            <span id="targetMissionText" class="text-xl font-extrabold text-amber-950 block">Mencari...</span>
+        </div>
+    </div>
+
+    <!-- CANVAS UTAMA LEBAR LAYAR -->
+    <div class="relative w-full h-full flex-1">
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- Feedback Popups (Benar/Salah Flash) -->
+        <div id="feedbackPopup" class="absolute inset-0 pointer-events-none flex items-center justify-center z-10 opacity-0 transition-opacity duration-200">
+            <div id="feedbackCard" class="bg-white/95 border-4 border-green-500 rounded-3xl p-4 text-center shadow-2xl transform scale-90 transition-all duration-200">
+                <span id="feedbackIcon" class="text-5xl block mb-1">🎉</span>
+                <span id="feedbackTitle" class="text-xl font-extrabold text-gray-800 block">HEBAT!</span>
+                <span id="feedbackSub" class="text-sm font-semibold text-gray-600 block">Bola Tepat Target (+10)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOMBOL KONTROL MOBILE (BAWAH) -->
+    <div id="mobileControls" class="absolute bottom-3 left-0 right-0 z-20 flex justify-between px-6 pointer-events-auto max-w-md mx-auto hidden">
+        <button id="btnLeft" class="btn-3d btn-green w-24 h-20 rounded-3xl text-4xl flex items-center justify-center active:scale-90 transition-transform">
+            ⬅️
+        </button>
+        <button id="btnRight" class="btn-3d btn-green w-24 h-20 rounded-3xl text-4xl flex items-center justify-center active:scale-90 transition-transform">
+            ➡️
+        </button>
+    </div>
+
+    <!-- OVERLAY UTAMA: GAMEOVER / FINISH -->
+    <div id="endScreen" class="absolute inset-0 z-30 flex flex-col items-center justify-center p-4 bg-emerald-950/85 backdrop-blur-md hidden animate-pop">
+        <div class="glass-panel w-full max-w-md rounded-3xl p-6 text-center shadow-2xl flex flex-col items-center max-h-[90vh] overflow-y-auto">
+            
+            <h2 id="endTitle" class="text-3xl font-extrabold text-emerald-800 mb-1">HABIS WAKTU!</h2>
+            <p id="endSubtitle" class="text-xs font-semibold text-gray-600 mb-4">Kamu telah berburu bola dengan gigih!</p>
+
+            <!-- Bintang Hasil -->
+            <div id="starRating" class="flex justify-center gap-2 text-4xl mb-3">
+                <span>⭐</span><span>⭐</span><span>⭐</span>
+            </div>
+
+            <!-- Summary Box -->
+            <div class="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-4 w-full mb-4 grid grid-cols-2 gap-2 text-center">
+                <div class="bg-white p-2 rounded-xl shadow-sm border border-emerald-100">
+                    <span class="text-xs text-gray-500 font-semibold block">Skor Akhir</span>
+                    <span id="finalScore" class="text-2xl font-bold text-emerald-700">0</span>
+                </div>
+                <div class="bg-white p-2 rounded-xl shadow-sm border border-emerald-100">
+                    <span class="text-xs text-gray-500 font-semibold block">Akurasi</span>
+                    <span id="finalAccuracy" class="text-2xl font-bold text-emerald-700">0%</span>
+                </div>
+            </div>
+
+            <!-- Ringkasan Edukasi Singkat -->
+            <div class="w-full text-left mb-5">
+                <h3 class="text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Catatan Evaluasi Belajar:</h3>
+                <div id="eduSummaryList" class="bg-white border border-emerald-200 rounded-xl p-3 text-xs text-gray-700 space-y-1.5 max-h-36 overflow-y-auto shadow-inner">
+                    <!-- Dynamic content -->
+                </div>
+            </div>
+
+            <div class="flex gap-3 w-full">
+                <button onclick="returnToMenu()" class="flex-1 btn-3d bg-gray-200 text-gray-800 font-bold py-3 rounded-2xl border-2 border-gray-400">
+                    🏠 Menu
+                </button>
+                <button onclick="startGame()" class="flex-2 btn-3d btn-orange font-extrabold text-lg py-3 px-6 rounded-2xl">
+                    🔄 Main Lagi
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT GAME ENGINE -->
+    <script>
+        // ==========================================
+        // 1. DATA MATERI EDUTAINMENT KELAS 3 SD
+        // ==========================================
+        const GAME_DATA = {
+            math: {
+                title: "Matematika SD 3",
+                targets: [
+                    { id: "genap", name: "BILANGAN GENAP" },
+                    { id: "ganjil", name: "BILANGAN GANJIL" }
+                ],
+                items: [
+                    { text: "2", type: "genap", desc: "Habis dibagi 2" },
+                    { text: "4", type: "genap", desc: "Habis dibagi 2" },
+                    { text: "8", type: "genap", desc: "Habis dibagi 2" },
+                    { text: "12", type: "genap", desc: "Habis dibagi 2" },
+                    { text: "16", type: "genap", desc: "Habis dibagi 2" },
+                    { text: "20", type: "genap", desc: "Habis dibagi 2" },
+                    { text: "24", type: "genap", desc: "Habis dibagi 2" },
+                    { text: "30", type: "genap", desc: "Habis dibagi 2" },
+                    { text: "1", type: "ganjil", desc: "Tida habis dibagi 2" },
+                    { text: "3", type: "ganjil", desc: "Tida habis dibagi 2" },
+                    { text: "7", type: "ganjil", desc: "Tida habis dibagi 2" },
+                    { text: "9", type: "ganjil", desc: "Tida habis dibagi 2" },
+                    { text: "15", type: "ganjil", desc: "Tida habis dibagi 2" },
+                    { text: "21", type: "ganjil", desc: "Tida habis dibagi 2" },
+                    { text: "27", type: "ganjil", desc: "Tida habis dibagi 2" },
+                    { text: "33", type: "ganjil", desc: "Tida habis dibagi 2" }
+                ]
+            },
+            indo: {
+                title: "Bahasa Indonesia SD 3",
+                targets: [
+                    { id: "benda", name: "KATA BENDA" },
+                    { id: "sifat", name: "KATA SIFAT" },
+                    { id: "kerja", name: "KATA KERJA" }
+                ],
+                items: [
+                    { text: "Bola", type: "benda", desc: "Nama objek/benda" },
+                    { text: "Sepatu", type: "benda", desc: "Nama objek/benda" },
+                    { text: "Buku", type: "benda", desc: "Nama objek/benda" },
+                    { text: "Pensil", type: "benda", desc: "Nama objek/benda" },
+                    { text: "Rumput", type: "benda", desc: "Nama objek/benda" },
+                    { text: "Lari", type: "kerja", desc: "Aktivitas/tindakan" },
+                    { text: "Tendang", type: "kerja", desc: "Aktivitas/tindakan" },
+                    { text: "Lompat", type: "kerja", desc: "Aktivitas/tindakan" },
+                    { text: "Tangkap", type: "kerja", desc: "Aktivitas/tindakan" },
+                    { text: "Belajar", type: "kerja", desc: "Aktivitas/tindakan" },
+                    { text: "Cepat", type: "sifat", desc: "Menjelaskan keadaan" },
+                    { text: "Tinggi", type: "sifat", desc: "Menjelaskan keadaan" },
+                    { text: "Gembira", type: "sifat", desc: "Menjelaskan perasaan" },
+                    { text: "Bersih", type: "sifat", desc: "Menjelaskan kondisi" },
+                    { text: "Lincah", type: "sifat", desc: "Menjelaskan ciri" }
+                ]
+            },
+            science: {
+                title: "IPA Kelas 3 SD",
+                targets: [
+                    { id: "mamalia", name: "HEWAN MAMALIA" },
+                    { id: "unggas", name: "HEWAN UNGGAS" },
+                    { id: "tumbuhan", name: "BAGIAN TUMBUHAN" }
+                ],
+                items: [
+                    { text: "Kucing", type: "mamalia", desc: "Melahirkan & menyusui" },
+                    { text: "Kambing", type: "mamalia", desc: "Melahirkan & menyusui" },
+                    { text: "Sapi", type: "mamalia", desc: "Melahirkan & menyusui" },
+                    { text: "Kelinci", type: "mamalia", desc: "Melahirkan & menyusui" },
+                    { text: "Ayam", type: "unggas", desc: "Berjenis burung/unggas" },
+                    { text: "Bebek", type: "unggas", desc: "Berjenis burung/unggas" },
+                    { text: "Burung", type: "unggas", desc: "Berjenis burung/unggas" },
+                    { text: "Penguin", type: "unggas", desc: "Berjenis unggas laut" },
+                    { text: "Akar", type: "tumbuhan", desc: "Menyerap air tanah" },
+                    { text: "Daun", type: "tumbuhan", desc: "Tempat fotosintesis" },
+                    { text: "Batang", type: "tumbuhan", desc: "Penopang tanaman" },
+                    { text: "Bunga", type: "tumbuhan", desc: "Alat perkembangbiakan" }
+                ]
+            }
+        };
+
+        // Warna-warni Bola untuk Visual Menarik
+        const BALL_COLORS = [
+            { bg: "#ef4444", border: "#991b1b", text: "#ffffff" }, // Red
+            { bg: "#3b82f6", border: "#1e3a8a", text: "#ffffff" }, // Blue
+            { bg: "#f59e0b", border: "#78350f", text: "#ffffff" }, // Amber
+            { bg: "#8b5cf6", border: "#4c1d95", text: "#ffffff" }, // Purple
+            { bg: "#ec4899", border: "#831843", text: "#ffffff" }, // Pink
+            { bg: "#10b981", border: "#064e3b", text: "#ffffff" }  // Emerald
+        ];
+
+        // ==========================================
+        // 2. WEB AUDIO API SYNTHESIZER (No External Assets)
+        // ==========================================
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            playCorrect() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, this.ctx.currentTime); // C5
+                osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.15); // A5
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.2);
+            }
+
+            playWrong() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, this.ctx.currentTime); // A3
+                osc.frequency.exponentialRampToValueAtTime(130, this.ctx.currentTime + 0.25);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.25);
+            }
+
+            playMissionChange() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(440, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(659.25, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            }
+        }
+
+        const soundFX = new SoundEngine();
+
+        // ==========================================
+        // 3. STATE DAN VARIABEL GAME
+        // ==========================================
+        let canvas, ctx;
+        let selectedCategory = 'math';
+        let isGameRunning = false;
+        let score = 0;
+        let lives = 3;
+        let timeLeft = 60;
+        let timerInterval = null;
+        let spawnInterval = null;
+        let missionChangeInterval = null;
+
+        let totalAttempts = 0;
+        let correctCatches = 0;
+        let eduLogs = [];
+
+        let currentTarget = null;
+        let basket = {
+            x: 0,
+            y: 0,
+            width: 100,
+            height: 45,
+            speed: 8,
+            vx: 0
+        };
+
+        let balls = [];
+        let particles = [];
+        let isMovingLeft = false;
+        let isMovingRight = false;
+
+        // ==========================================
+        // 4. INISIALISASI & SETUP CANVAS
+        // ==========================================
+        window.onload = () => {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            setupControls();
+            selectCategory('math'); // Default selection
+        };
+
+        function resizeCanvas() {
+            if (!canvas) return;
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+            
+            // Re-adjust player basket position
+            basket.width = Math.min(Math.max(canvas.width * 0.22, 85), 130);
+            basket.height = basket.width * 0.45;
+            basket.y = canvas.height - basket.height - 85; 
+        }
+
+        function selectCategory(catKey) {
+            selectedCategory = catKey;
+            ['math', 'indo', 'science'].forEach(k => {
+                const btn = document.getElementById(`cat-${k}`);
+                if (k === catKey) {
+                    btn.classList.add('ring-4', 'ring-yellow-300', 'scale-105');
+                } else {
+                    btn.classList.remove('ring-4', 'ring-yellow-300', 'scale-105');
+                }
+            });
+        }
+
+        // ==========================================
+        // 5. INPUT & KONTROL MOBILE / TOUCH / KEYBOARD
+        // ==========================================
+        function setupControls() {
+            // Keyboard Listener
+            window.addEventListener('keydown', (e) => {
+                if (!isGameRunning) return;
+                if (e.key === 'ArrowLeft' || e.key === 'a') isMovingLeft = true;
+                if (e.key === 'ArrowRight' || e.key === 'd') isMovingRight = true;
+            });
+
+            window.addEventListener('keyup', (e) => {
+                if (e.key === 'ArrowLeft' || e.key === 'a') isMovingLeft = false;
+                if (e.key === 'ArrowRight' || e.key === 'd') isMovingRight = false;
+            });
+
+            // Mobile Touch Buttons
+            const btnLeft = document.getElementById('btnLeft');
+            const btnRight = document.getElementById('btnRight');
+
+            const startLeft = (e) => { e.preventDefault(); soundFX.init(); isMovingLeft = true; };
+            const stopLeft = (e) => { e.preventDefault(); isMovingLeft = false; };
+            const startRight = (e) => { e.preventDefault(); soundFX.init(); isMovingRight = true; };
+            const stopRight = (e) => { e.preventDefault(); isMovingRight = false; };
+
+            btnLeft.addEventListener('touchstart', startLeft);
+            btnLeft.addEventListener('touchend', stopLeft);
+            btnLeft.addEventListener('mousedown', startLeft);
+            btnLeft.addEventListener('mouseup', stopLeft);
+
+            btnRight.addEventListener('touchstart', startRight);
+            btnRight.addEventListener('touchend', stopRight);
+            btnRight.addEventListener('mousedown', startRight);
+            btnRight.addEventListener('mouseup', stopRight);
+
+            // Drag/Touch Canvas Controls Direct Move
+            canvas.addEventListener('touchmove', (e) => {
+                if (!isGameRunning) return;
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                const touchX = touch.clientX - rect.left;
+                basket.x = touchX - basket.width / 2;
+                clampBasket();
+            }, { passive: true });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (!isGameRunning || e.buttons !== 1) return;
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                basket.x = mouseX - basket.width / 2;
+                clampBasket();
+            });
+        }
+
+        function clampBasket() {
+            if (basket.x < 10) basket.x = 10;
+            if (basket.x + basket.width > canvas.width - 10) {
+                basket.x = canvas.width - 10 - basket.width;
+            }
+        }
+
+        // ==========================================
+        // 6. GAME LOGIC & SPANNING
+        // ==========================================
+        function startGame() {
+            soundFX.init();
+
+            // Reset States
+            score = 0;
+            lives = 3;
+            timeLeft = 60;
+            balls = [];
+            particles = [];
+            eduLogs = [];
+            totalAttempts = 0;
+            correctCatches = 0;
+            isGameRunning = true;
+
+            // UI Elements Adjustments
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('endScreen').classList.add('hidden');
+            document.getElementById('hud').classList.remove('hidden');
+            document.getElementById('hud').classList.add('flex');
+            document.getElementById('mobileControls').classList.remove('hidden');
+
+            updateHUD();
+            switchTargetMission();
+
+            // Basket start pos
+            basket.x = canvas.width / 2 - basket.width / 2;
+
+            // Clear Intervals
+            clearInterval(timerInterval);
+            clearInterval(spawnInterval);
+            clearInterval(missionChangeInterval);
+
+            // Timers & Loops
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timerText').innerText = `${timeLeft}s`;
+                if (timeLeft <= 0) {
+                    endGame("WAKTU HABIS! ⏰");
+                }
+            }, 1000);
+
+            // Spawn ball every 1.4s
+            spawnInterval = setInterval(spawnBall, 1400);
+
+            // Periodically switch target mission to keep it dynamic (every 18s)
+            missionChangeInterval = setInterval(() => {
+                if (isGameRunning) switchTargetMission();
+            }, 18000);
+
+            // Start Animation Frame Loop
+            requestAnimationFrame(gameLoop);
+        }
+
+        function switchTargetMission() {
+            const catData = GAME_DATA[selectedCategory];
+            const availableTargets = catData.targets;
+            
+            // Choose target different from current if possible
+            let newTarget;
+            do {
+                newTarget = availableTargets[Math.floor(Math.random() * availableTargets.length)];
+            } while (availableTargets.length > 1 && currentTarget && newTarget.id === currentTarget.id);
+
+            currentTarget = newTarget;
+            document.getElementById('targetMissionText').innerText = currentTarget.name;
+            soundFX.playMissionChange();
+        }
+
+        function spawnBall() {
+            if (!isGameRunning) return;
+
+            const catData = GAME_DATA[selectedCategory];
+            // 55% chance to spawn matching item for current target
+            const matchTarget = Math.random() < 0.55;
+            let filteredItems;
+
+            if (matchTarget) {
+                filteredItems = catData.items.filter(i => i.type === currentTarget.id);
+            } else {
+                filteredItems = catData.items.filter(i => i.type !== currentTarget.id);
+            }
+
+            if (!filteredItems || filteredItems.length === 0) filteredItems = catData.items;
+
+            const itemData = filteredItems[Math.floor(Math.random() * filteredItems.length)];
+            const colorScheme = BALL_COLORS[Math.floor(Math.random() * BALL_COLORS.length)];
+
+            const radius = Math.min(Math.max(canvas.width * 0.07, 26), 36);
+            const x = Math.random() * (canvas.width - radius * 2) + radius;
+
+            balls.push({
+                x: x,
+                y: -radius,
+                radius: radius,
+                speed: 2.2 + Math.random() * 1.8,
+                data: itemData,
+                color: colorScheme,
+                rotation: 0,
+                rotSpeed: (Math.random() - 0.5) * 0.05
+            });
+        }
+
+        // ==========================================
+        // 7. RENDER & UPDATE LOOP
+        // ==========================================
+        function gameLoop() {
+            if (!isGameRunning) return;
+
+            updatePhysics();
+            renderCanvas();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updatePhysics() {
+            // Movement Buttons / Keys
+            if (isMovingLeft) basket.x -= basket.speed;
+            if (isMovingRight) basket.x += basket.speed;
+            clampBasket();
+
+            // Update Balls
+            for (let i = balls.length - 1; i >= 0; i--) {
+                const b = balls[i];
+                b.y += b.speed;
+                b.rotation += b.rotSpeed;
+
+                // Collision Check with Basket
+                if (
+                    b.y + b.radius >= basket.y &&
+                    b.y - b.radius <= basket.y + basket.height &&
+                    b.x + b.radius >= basket.x &&
+                    b.x - b.radius <= basket.x + basket.width
+                ) {
+                    handleBallCatch(b);
+                    balls.splice(i, 1);
+                    continue;
+                }
+
+                // Off Screen Bottom Check
+                if (b.y - b.radius > canvas.height) {
+                    // Missed ball penalty if it was correct target
+                    if (b.data.type === currentTarget.id) {
+                        handleMissedTarget(b);
+                    }
+                    balls.splice(i, 1);
+                }
+            }
+
+            // Update Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= 0.03;
+                if (p.alpha <= 0) particles.splice(i, 1);
+            }
+        }
+
+        function handleBallCatch(ball) {
+            totalAttempts++;
+            const isCorrect = (ball.data.type === currentTarget.id);
+
+            if (isCorrect) {
+                score += 10;
+                correctCatches++;
+                soundFX.playCorrect();
+                createParticles(ball.x, ball.y, ball.color.bg);
+                showFeedback(true, `BENAR! (+10)`, `${ball.data.text} = ${ball.data.desc}`);
+            } else {
+                score = Math.max(0, score - 5);
+                lives--;
+                soundFX.playWrong();
+                showFeedback(false, `SALAH! (-5)`, `${ball.data.text} bukan ${currentTarget.name}`);
+                
+                // Add to Edu Log for End Screen Correction
+                eduLogs.push({
+                    word: ball.data.text,
+                    status: 'salah',
+                    reason: `Harusnya disesuaikan, ${ball.data.text} adalah (${ball.data.desc})`
+                });
+
+                if (lives <= 0) {
+                    endGame("NYAWA HABIS! 💔");
+                }
+            }
+
+            updateHUD();
+        }
+
+        function handleMissedTarget(ball) {
+            // Missed a target ball quiet warning
+            eduLogs.push({
+                word: ball.data.text,
+                status: 'terlewat',
+                reason: `${ball.data.text} sebenarnya ${currentTarget.name}!`
+            });
+        }
+
+        function createParticles(x, y, color) {
+            for (let i = 0; i < 12; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6,
+                    radius: Math.random() * 5 + 3,
+                    color: color,
+                    alpha: 1
+                });
+            }
+        }
+
+        function showFeedback(isSuccess, title, subtitle) {
+            const popup = document.getElementById('feedbackPopup');
+            const card = document.getElementById('feedbackCard');
+            const icon = document.getElementById('feedbackIcon');
+            const tText = document.getElementById('feedbackTitle');
+            const sText = document.getElementById('feedbackSub');
+
+            icon.innerText = isSuccess ? '⭐' : '❌';
+            tText.innerText = title;
+            tText.className = isSuccess ? 'text-xl font-extrabold text-green-700 block' : 'text-xl font-extrabold text-red-600 block';
+            sText.innerText = subtitle;
+
+            card.className = isSuccess ? 
+                'bg-white/95 border-4 border-green-500 rounded-3xl p-4 text-center shadow-2xl transform scale-100 transition-all duration-200' :
+                'bg-white/95 border-4 border-red-500 rounded-3xl p-4 text-center shadow-2xl transform scale-100 transition-all duration-200';
+
+            popup.style.opacity = '1';
+
+            setTimeout(() => {
+                popup.style.opacity = '0';
+            }, 800);
+        }
+
+        function updateHUD() {
+            document.getElementById('scoreText').innerText = score;
+            
+            // Render Hearts
+            const heartsContainer = document.getElementById('livesContainer');
+            let heartsHtml = '';
+            for (let i = 0; i < 3; i++) {
+                if (i < lives) {
+                    heartsHtml += `<span class="text-lg">❤️</span>`;
+                } else {
+                    heartsHtml += `<span class="text-lg opacity-30">🖤</span>`;
+                }
+            }
+            heartsContainer.innerHTML = heartsHtml;
+        }
+
+        // ==========================================
+        // 8. CANVAS DRAWING (Visual Lapangan & Assets)
+        // ==========================================
+        function renderCanvas() {
+            // A. Lapangan Rumput Cerah dengan Garis Olahraga
+            ctx.fillStyle = '#4ade80'; // Emerald Grass
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Stripe Pattern Lapangan
+            ctx.fillStyle = '#22c55e';
+            const stripeHeight = 60;
+            for (let y = 0; y < canvas.height; y += stripeHeight * 2) {
+                ctx.fillRect(0, y, canvas.width, stripeHeight);
+            }
+
+            // Garis Lapangan Putih
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 4;
+            // Border Line
+            ctx.strokeRect(15, 15, canvas.width - 30, canvas.height - 30);
+            // Circle Center
+            ctx.beginPath();
+            ctx.arc(canvas.width / 2, canvas.height / 2, 70, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // B. Draw Balls
+            balls.forEach(b => {
+                ctx.save();
+                ctx.translate(b.x, b.y);
+                ctx.rotate(b.rotation);
+
+                // Shadow
+                ctx.fillStyle = 'rgba(0,0,0,0.15)';
+                ctx.beginPath();
+                ctx.ellipse(0, b.radius + 4, b.radius * 0.8, b.radius * 0.3, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Ball Body
+                ctx.fillStyle = b.color.bg;
+                ctx.beginPath();
+                ctx.arc(0, 0, b.radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Outer Border
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = b.color.border;
+                ctx.stroke();
+
+                // Soccer Pattern / Highlight Arc
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                ctx.beginPath();
+                ctx.arc(-b.radius * 0.3, -b.radius * 0.3, b.radius * 0.35, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Text Label inside Ball
+                ctx.restore(); // Restore orientation for legible text!
+                ctx.save();
+                ctx.translate(b.x, b.y);
+                ctx.fillStyle = b.color.text;
+                ctx.font = `bold ${Math.max(12, b.radius * 0.55)}px Fredoka, sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(b.data.text, 0, 0);
+                ctx.restore();
+            });
+
+            // C. Draw Player Basket (Keranjang Olahraga)
+            ctx.save();
+            ctx.translate(basket.x, basket.y);
+
+            // Basket Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.beginPath();
+            ctx.ellipse(basket.width / 2, basket.height + 6, basket.width * 0.45, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Basket Body (Seni Keranjang Anyaman Lucu)
+            ctx.fillStyle = '#d97706'; // Amber/Wood
+            ctx.beginPath();
+            ctx.roundRect(0, 0, basket.width, basket.height, [10, 10, 20, 20]);
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#78350f';
+            ctx.stroke();
+
+            // Basket Rim / Lip Top
+            ctx.fillStyle = '#f59e0b';
+            ctx.beginPath();
+            ctx.roundRect(-4, -6, basket.width + 8, 12, 6);
+            ctx.fill();
+            ctx.stroke();
+
+            // Net Lines Overlay
+            ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let x = 15; x < basket.width; x += 15) {
+                ctx.moveTo(x, 6);
+                ctx.lineTo(x - 5, basket.height - 4);
+            }
+            ctx.stroke();
+
+            ctx.restore();
+
+            // D. Draw Particles Effect
+            particles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+        }
+
+        // ==========================================
+        // 9. AKHIR PERMAINAN & EVALUASI EDUTAINMENT
+        // ==========================================
+        function endGame(reasonTitle) {
+            isGameRunning = false;
+            clearInterval(timerInterval);
+            clearInterval(spawnInterval);
+            clearInterval(missionChangeInterval);
+
+            // Show End Overlay
+            document.getElementById('hud').classList.add('hidden');
+            document.getElementById('mobileControls').classList.add('hidden');
+            document.getElementById('endScreen').classList.remove('hidden');
+
+            document.getElementById('endTitle').innerText = reasonTitle;
+            document.getElementById('finalScore').innerText = score;
+
+            const accuracy = totalAttempts > 0 ? Math.round((correctCatches / totalAttempts) * 100) : 0;
+            document.getElementById('finalAccuracy').innerText = `${accuracy}%`;
+
+            // Star Rating Logic
+            let starsHtml = '';
+            if (score >= 120 && accuracy >= 80) {
+                starsHtml = '⭐ ⭐ ⭐';
+            } else if (score >= 60 || accuracy >= 50) {
+                starsHtml = '⭐ ⭐ ⚪';
+            } else {
+                starsHtml = '⭐ ⚪ ⚪';
+            }
+            document.getElementById('starRating').innerHTML = starsHtml;
+
+            // Generate Edu Review Summary
+            const eduList = document.getElementById('eduSummaryList');
+            if (eduLogs.length === 0) {
+                eduList.innerHTML = `<p class="text-emerald-700 font-bold text-center">Luar biasa! Kamu tidak membuat kesalahan sama sekali! 🎉</p>`;
+            } else {
+                let listHtml = '';
+                // Deduplicate logs
+                const uniqueLogs = eduLogs.filter((v, i, a) => a.findIndex(t => (t.word === v.word)) === i);
+                uniqueLogs.forEach(log => {
+                    listHtml += `
+                        <div class="border-b border-gray-100 pb-1">
+                            <span class="font-bold text-red-600">• ${log.word}:</span> 
+                            <span class="text-gray-600">${log.reason}</span>
+                        </div>
+                    `;
+                });
+                eduList.innerHTML = listHtml;
+            }
+        }
+
+        function returnToMenu() {
+            document.getElementById('endScreen').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
